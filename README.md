@@ -75,3 +75,5 @@ Still living in their kubestellar counterparts; migrate when needed:
 ## License
 
 Apache-2.0. Portions copyright the KubeStellar Authors.
+
+<!-- prow e2e check 2026-09-01 -->
