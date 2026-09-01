@@ -1,0 +1,33 @@
+# Adapted from kubestellar/infra .github/workflows/reusable-feedback.yml (Apache-2.0, the KubeStellar Authors).
+# Changes: KubeStellar Console/Marketplace/Knowledge Base links removed; survey defaults to
+# the Hive Commons org discussions page. Callers can override via the survey_url input.
+# See LICENSE at the repository root.
+name: Reusable Feedback
+
+on:
+  workflow_call:
+    inputs:
+      survey_url:
+        description: 'URL for post-merge feedback (survey or discussions)'
+        required: false
+        type: string
+        default: 'https://github.com/orgs/hivecommons/discussions'
+
+jobs:
+  feedback:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Comment feedback request
+        uses: peter-evans/create-or-update-comment@71345be0265236311c031f5c7866368bd1eff043 # v4
+        continue-on-error: true
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            Thank you for your contribution! Your PR has been merged.
+
+            We'd love to hear how your experience was: [share feedback](${{ inputs.survey_url }})

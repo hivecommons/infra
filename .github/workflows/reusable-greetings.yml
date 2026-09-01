@@ -1,0 +1,94 @@
+# Adapted from kubestellar/infra .github/workflows/reusable-greetings.yml (Apache-2.0, the KubeStellar Authors).
+# Changes: default greeting messages rewritten for Hive Commons; KubeStellar marketing links removed.
+# Callers can override both messages via inputs.
+# See LICENSE at the repository root.
+name: Reusable Greetings
+
+on:
+  workflow_call:
+    inputs:
+      pr_message:
+        description: 'Message to post for PR contributors'
+        required: false
+        type: string
+        default: |
+          Welcome to the Hive Commons community!
+
+          Thanks for opening your first PR here! We're excited to have you contributing.
+
+          **Before merge, please ensure:**
+          - **DCO Sign-off** — All commits signed with `git commit -s` ([DCO](https://developercertificate.org/))
+          - **PR Title** — Starts with an emoji: ✨ feature | 🐛 bug fix | 📖 docs | 🌱 infra/tests | ⚠️ breaking
+
+          A maintainer will review your PR soon. Hope you have a great time here!
+      issue_message:
+        description: 'Message to post for issue creators'
+        required: false
+        type: string
+        default: |
+          Welcome to the Hive Commons community!
+
+          Thanks for opening your first issue here! Every issue helps make the project better.
+
+          **To work on this issue**, comment `/assign` to assign yourself (use `/unassign` to remove).
+
+          **Find issues to work on:** look for the [`good first issue`](https://github.com/search?q=org%3Ahivecommons+is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [`help wanted`](https://github.com/search?q=org%3Ahivecommons+is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) labels.
+
+          Hope you have a great time here!
+
+          **For Maintainers:** `/good-first-issue` | `/help-wanted`
+
+permissions:
+  contents: read
+
+jobs:
+  greeting:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Greet contributor
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          PR_MESSAGE: ${{ inputs.pr_message }}
+          ISSUE_MESSAGE: ${{ inputs.issue_message }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const author = context.payload.pull_request?.user?.login || context.payload.issue?.user?.login;
+            const isPR = !!context.payload.pull_request;
+            const itemNumber = context.payload.pull_request?.number || context.payload.issue?.number;
+
+            if (!author || !itemNumber) {
+              console.log('Could not determine author or item number');
+              return;
+            }
+
+            // Skip bots
+            if (author.endsWith('[bot]') || author === 'dependabot' || author === 'github-actions') {
+              console.log(`Skipping bot: ${author}`);
+              return;
+            }
+
+            // Check if this is the author's first issue/PR in this repo
+            const searchType = isPR ? 'pr' : 'issue';
+            const query = `repo:${owner}/${repo} author:${author} type:${searchType}`;
+            const { data: searchResult } = await github.rest.search.issuesAndPullRequests({ q: query, per_page: 2 });
+            if (searchResult.total_count > 1) {
+              console.log(`${author} already has ${searchResult.total_count} ${searchType}s — skipping greeting`);
+              return;
+            }
+
+            console.log(`First-time greeting for ${author} on ${isPR ? 'PR' : 'issue'} #${itemNumber}`);
+
+            const message = isPR ? process.env.PR_MESSAGE : process.env.ISSUE_MESSAGE;
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: itemNumber,
+              body: message
+            });
+
+            console.log('Greeting posted successfully');
