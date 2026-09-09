@@ -10,7 +10,7 @@ on:
         description: 'URL to the contributing guide'
         required: false
         type: string
-        default: 'https://github.com/kubestellar/hive/blob/v4/CONTRIBUTING.md'
+        default: 'https://github.com/hivecommons/hive/blob/v4/CONTRIBUTING.md'
 
 jobs:
   assignment-helper:
