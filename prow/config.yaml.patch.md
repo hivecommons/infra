@@ -11,11 +11,24 @@ tide:
     kubestellar: merge  # (existing)
     # ... existing kubestellar/<repo> overrides ...
     hivecommons: squash  # org-wide default for hivecommons
+    hivecommons/hive: rebase  # override: see note below (hivecommons/hive#6312)
 ```
 
 Hive Commons repos default to squash (matching the operator's existing squash-merge
-practice for hive/console work); add per-repo `hivecommons/<repo>: merge` overrides later
-if a repo needs merge commits.
+practice for hive/console work); add further per-repo `hivecommons/<repo>: merge` or
+`rebase` overrides later if a repo needs a different merge shape.
+
+`hivecommons/hive` is overridden to `rebase` because Tide's squash rebuilds the merge
+commit from the PR title/body and the PR author's *login*, not from the branch's signed
+commits — the resulting squash commit's `Signed-off-by:` trailer is either dropped or no
+longer matches the squash commit's author identity, so v4/v5 fail their post-merge DCO
+check (see hivecommons/hive#6312 for two observed failure shapes). Tide's
+`merge_commit_template` cannot fix this because it only has PR title/body/author login
+available, not the author's DCO-signing email. `rebase` replays each already-signed
+branch commit onto the base as-is, so every commit lands with its own valid
+`Signed-off-by:` trailer. This requires PR branches to be free of merge conflicts and
+`needs-rebase`-clean, which the existing `tide.queries` entry already enforces via
+`missingLabels: [needs-rebase, ...]`.
 
 ## 2. `tide.queries` — add hivecommons to the org-wide query
 
