@@ -2,8 +2,8 @@
 
 Shared CI workflows, Prow configuration, and org automation for the **Hive Commons**
 (`hivecommons`) GitHub org — the umbrella org for the hive project. The hive codebase
-itself still lives in [`kubestellar/hive`](https://github.com/kubestellar/hive) for now;
-this repo bootstraps the org-level infrastructure that new `hivecommons` repos will share.
+itself lives in [`hivecommons/hive`](https://github.com/hivecommons/hive); this repo
+bootstraps the org-level infrastructure that `hivecommons` repos share.
 
 The contents are seeded from [`kubestellar/infra`](https://github.com/kubestellar/infra)
 (Apache-2.0) and adapted for this org. Each workflow file carries an attribution header
