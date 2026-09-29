@@ -30,6 +30,7 @@ jobs:
 | Workflow | What it does | Adapted? |
 |---|---|---|
 | `reusable-copilot-dco.yml` | Sets the `dco` commit status to success and swaps `dco-signoff` labels on Copilot-authored PRs (Prow's `dco` plugin cannot trust apps) | Yes — DCO link now points at the calling repo's `CONTRIBUTING.md` |
+| `reusable-close-linked-issues.yml` | Closes same-repo issues referenced by merged PRs that target non-default branches, with dry-run support | Yes — Hive Commons-specific release-branch issue hygiene |
 | `reusable-copilot-automation.yml` | Full Copilot PR processing: DCO override, `copilot` label, removes blocking labels | No (verbatim) |
 | `reusable-ai-fix.yml` | Assigns the Copilot coding agent to issues labeled `ai-fix-requested` + `triage/accepted`; links resulting PRs back to the issue | No (verbatim) |
 | `reusable-stale.yml` | Marks issues stale after N days (default 90) and closes after N more; PRs exempt | No (verbatim) |
@@ -41,6 +42,30 @@ jobs:
 | `reusable-assignment-helper.yml` | Replies to natural-language "assign me" comments with the `/assign` slash-command hint | Yes — KubeStellar resource links removed |
 | `reusable-greetings.yml` | Welcomes first-time issue/PR authors (message overridable via inputs) | Yes — default messages rewritten for Hive Commons |
 | `reusable-feedback.yml` | Thank-you comment on merged PRs with a feedback link | Yes — defaults to the org discussions page |
+
+
+### Close linked issues on release branches
+
+Add this thin caller workflow to a repository that merges fixes into release branches:
+
+```yaml
+name: Close linked issues
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-linked-issue:
+    uses: hivecommons/infra/.github/workflows/reusable-close-linked-issues.yml@main
+```
+
+Set `with: { dry_run: true }` to log the same-repo issues that would be closed without updating them.
 
 ## Not yet migrated
 

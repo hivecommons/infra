@@ -1,0 +1,113 @@
+# Adapted from hivecommons/infra issue #7 proposal.
+# See LICENSE at the repository root.
+name: Close Issue on Non-Default Branch Merge
+
+on:
+  workflow_call:
+    inputs:
+      dry_run:
+        description: Log linked issues that would be closed without updating them
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-linked-issue:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find and Close Linked Issues
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull request payload found, skipping');
+              return;
+            }
+
+            const defaultBranch = context.payload.repository?.default_branch ||
+              (await github.rest.repos.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              })).data.default_branch;
+
+            if (pr.base.ref === defaultBranch) {
+              core.info(`PR #${pr.number} merged to default branch ${defaultBranch}; GitHub handles linked issues, skipping`);
+              return;
+            }
+
+            const prBody = pr.body || '';
+            if (!prBody.trim()) {
+              core.info('PR body is empty, skipping');
+              return;
+            }
+
+            const sanitizedBody = prBody
+              .replace(/```[\s\S]*?```/g, ' ')
+              .replace(/`[^`\n]*`/g, ' ')
+              .replace(/\bhttps?:\/\/\S+/gi, ' ');
+
+            const closingKeywordRegex = /\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\b\s*:?\s+#(\d+)/gi;
+            const issueNumbers = new Set();
+            let match;
+
+            while ((match = closingKeywordRegex.exec(sanitizedBody)) !== null) {
+              issueNumbers.add(parseInt(match[1], 10));
+            }
+
+            if (issueNumbers.size === 0) {
+              core.info('No same-repo linked issues found');
+              return;
+            }
+
+            const dryRun = ${{ inputs.dry_run }};
+            for (const issueNumber of issueNumbers) {
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                });
+
+                if (issue.pull_request) {
+                  core.info(`#${issueNumber} is a pull request, skipping`);
+                  continue;
+                }
+
+                if (issue.state === 'closed') {
+                  core.info(`Issue #${issueNumber} is already closed, skipping`);
+                  continue;
+                }
+
+                if (dryRun) {
+                  core.info(`[dry-run] Would close issue #${issueNumber} from PR #${pr.number} merged to ${pr.base.ref}`);
+                  continue;
+                }
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `Closed by #${pr.number} (merged to \`${pr.base.ref}\`).`,
+                });
+
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+
+                core.info(`Closed issue #${issueNumber}`);
+              } catch (error) {
+                core.warning(`Failed to close issue #${issueNumber}: ${error.message}`);
+              }
+            }
