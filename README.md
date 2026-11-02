@@ -42,6 +42,7 @@ jobs:
 | `reusable-assignment-helper.yml` | Replies to natural-language "assign me" comments with the `/assign` slash-command hint | Yes — KubeStellar resource links removed |
 | `reusable-greetings.yml` | Welcomes first-time issue/PR authors (message overridable via inputs) | Yes — default messages rewritten for Hive Commons |
 | `reusable-feedback.yml` | Thank-you comment on merged PRs with a feedback link | Yes — defaults to the org discussions page |
+| `reusable-pr-verifier.yml` | Runs the PR verifier image (title/description conventions) on pull requests; dependabot PRs skipped | Yes — verifier image re-homed to `ghcr.io/hivecommons` |
 
 
 ### Close linked issues on release branches
@@ -77,10 +78,10 @@ Still living in their kubestellar counterparts; migrate when needed:
   should call the reusable workflows here directly until the org is big enough to warrant
   it.
 - **Org workflow templates** — `kubestellar/.github` `workflow-templates/` (starter
-  CI/CD, release automation, security scan templates). A `hivecommons/.github` repo can
-  adopt these later.
-- **Org community health files** — issue templates, PR template, code of conduct,
-  security policy (`kubestellar/.github`).
+  CI/CD, release automation, security scan templates). The
+  [`hivecommons/.github`](https://github.com/hivecommons/.github) repo exists (profile
+  README, code of conduct, security policy, governance) but does not carry
+  `workflow-templates/` yet.
 - **Prow cluster manifests and images** — `kubestellar/infra` `clusters/`, `images/`,
   `iac/`. The Prow instance itself remains operated from `kubestellar/infra`; this repo
   only documents onboarding (see [`prow/`](prow/)).
